@@ -17,6 +17,17 @@ def lemmation(tokens):
         lem_token_list.append(wordnet_lemmatizer.lemmatize(w))
     return lem_token_list
 
+#Function for pos_tag to include only nouns, verbs, adverbs and adjectives
+def pos_text(tokens):
+    pos_tag_list = []
+    pos_tokens = [word for word, pos in tokens if (pos == 'NN' or pos == 'NNP' or pos == 'NNS' or pos == 'NNPS'
+           or pos == "RB" or pos == "RBR" or pos == "RBS" or pos == "JJ"
+            or pos == "VB" or pos == "VBD" or pos == "VBG" or pos == "VBN" or pos == "VBP" or pos == "VBZ")]
+    pos_tag_list.append(pos_tokens)
+    return pos_tag_list
+
+
+
 #Function preprocesses text to lower case and removes standard and custom stop words
 def pre_process(details_list):
     custom_stopWords = ["home", "smart", "smart-home", "homemaker", "al", "n't", "'s", ".", "'", "'ve", "!", "'m",
@@ -30,7 +41,8 @@ def pre_process(details_list):
         tokens = [w for w in tokens if not w in stopset]
         tokens = [w for w in tokens if not w in custom_stopWords]
         tokens = lemmation(tokens)
-        tokens_list.append(pos_tag(tokens))
+        #tokens = pos_text(tokens)
+        tokens_list.append(pos_text(pos_tag(tokens)))
     return tokens_list
 
 #Function prints list passed to it
