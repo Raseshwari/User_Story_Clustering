@@ -5,6 +5,8 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 import math
 import numpy as np
+from matplotlib import pyplot as plt
+import csv
 np.set_printoptions(threshold=np.nan)
 
 
@@ -12,6 +14,16 @@ np.set_printoptions(threshold=np.nan)
 def read_file(path):
     df = pd.read_excel(path)
     return df
+
+def read_csv_file(path):
+    result = []
+    with open(path, "r") as file:
+        next(file)
+        reader = csv.reader(file)
+
+        for row in reader:
+            result.append(row[1]+" "+row[2]+" "+row[3])
+    return result
 
 
 #Function lemmatizes the word tokens and returns a list of lemmatized token words
@@ -107,14 +119,73 @@ def compute_document_matrix(document):
     return doc_term_matrix_l2_norm
 
 
+#Function for counting number of docs having the word
+def number_of_docs_with_word(word, document_list):
+    document_count = 0
+    for doc in document_list:
+        if freq(word, doc) > 0:
+            document_count += 1
+    return document_count
+
+
+#Function to compute the idf value for each word in the document list
+def compute_idf_value(word, document_list):
+    number_of_documents = len(document_list)
+    df = number_of_docs_with_word(word, document_list)
+    return np.log(number_of_documents / 1+df)
+
+
+#Function to compute idf matrix
+def compute_idf_matrix(idf_vector):
+    idf_matrix = np.zeros((len(idf_vector), len(idf_vector))) #Fill in zeroes where there is no value
+    np.fill_diagonal(idf_matrix, idf_vector) #Fill the values diagonally
+    return idf_matrix
+
+
+#Function to calculate the dot product of normalized tf and idf matrix
+def compute_tf_idf(normalized_doc_matrix,idf_matrix):
+    doc_term_matrix_tfidf = []
+    for tf_vector in normalized_doc_matrix:
+        doc_term_matrix_tfidf.append(np.dot(tf_vector, idf_matrix))
+
+    doc_term_matrix_tfidf_l2 = []
+    for tf_vector in doc_term_matrix_tfidf:
+        doc_term_matrix_tfidf_l2.append(l2_normalizer(tf_vector))
+    return doc_term_matrix_tfidf_l2
+
+
+def scatter_plot(df):
+    feat1 = df['id'].values
+    feat2 = df['details'].values
+    X = np.array(list(zip(feat1, feat2)))
+    plt.scatter(feat1, feat2, c='black', s=7)
+    plt.show()
+
 def main():
 
     path = input("Please enter the file path: ")
-    df = read_file(path)
-    processed_text = pre_process(df['details'])
-    processed_text.pop(len(processed_text)-1) #to remove the last empty row
+    #df = read_file(path)
+    df = read_csv_file(path)
+
+    processed_text = pre_process(df)
+    #processed_text.pop(len(processed_text)-1) #to remove the last empty row
+
+    vocabulary = compute_vocab_list(processed_text)
     document = compute_tf(processed_text) #list of size 1000 with 1/0 comma-seperated for each word
+
     normalized_doc_matrix = compute_document_matrix(document)
+
+    # For every word in the vocabulary count documents word is present in and compute word's idf value
+    idf_vector = [compute_idf_value(word, processed_text) for word in vocabulary]
+    idf_matrix = compute_idf_matrix(idf_vector)
+
+    #print(idf_vector)
+    #print(idf_matrix.shape)
+
+    doc_term_matrix_tfidf_l2 = compute_tf_idf(normalized_doc_matrix, idf_matrix)
+    print(np.matrix(doc_term_matrix_tfidf_l2).shape)
+
+    #scatter_plot(df)
 
 
 if __name__ == '__main__':
